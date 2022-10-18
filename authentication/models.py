@@ -42,8 +42,12 @@ class User(AbstractUser):
     email = models.EmailField(max_length=80, unique=True)
     phone_number = PhoneNumberField(null=False, unique=True)
     
+    objects= CustomUserManager()
+     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'phone_number']
+    
+   
     
     def __str__(self):
         return f"<User {self.email}"
