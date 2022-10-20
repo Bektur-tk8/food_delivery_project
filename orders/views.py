@@ -1,3 +1,4 @@
+from urllib.robotparser import RequestRate
 from django.http import HttpResponse
 from django.shortcuts import render
 from rest_framework import generics, status
@@ -40,6 +41,7 @@ class OrderCreateListView(generics.GenericAPIView):
 class OrderDetailView(generics.GenericAPIView):
     
     serializer_class = serializers.OrderDetailSerializer
+    # permission_classes=[IsAuthenticated]
     
     # def get_object(self, pk):
     #     try:
@@ -56,12 +58,35 @@ class OrderDetailView(generics.GenericAPIView):
         
 
     def put(self, request, pk):
-        # order = self.get_object(pk)
-        serializer = self.serializer_class(data=request.data)
+        order = get_object_or_404(Order, pk=pk)
+        serializer = self.serializer_class(data=request.data, instance=order)
+        
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self, request, pk):
-        pass
+        order = get_object_or_404(Order, pk=pk)  
+        order.delete()     
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class OrderStatusUpdateView(generics.GenericAPIView):
+    serializer_class = serializers.OrderStatusUpdateSerializer
+    
+    def get(self, request, pk):
+        
+        order = get_object_or_404(Order, pk=pk)
+        serializer = self.serializer_class(order)
+        return Response(serializer.data)
+    
+    def put(self, request, pk):
+        order = get_object_or_404(Order, pk=pk)
+        serializer = self.serializer_class(data=request.data, instance=order)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
