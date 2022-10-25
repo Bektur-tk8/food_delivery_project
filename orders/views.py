@@ -4,23 +4,18 @@ from django.shortcuts import render
 from rest_framework import generics, status
 from rest_framework.response import Response
 from . import serializers
-from .models import Order
-from rest_framework.permissions import IsAuthenticated
+from .models import Order, User
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
 from django.shortcuts import get_object_or_404
 
 
-
-
-class HelloOrderView(generics.GenericAPIView):
-    def get(self, requets):
-        return Response(data={"message": "Hello Orders"}, status=status.HTTP_200_OK)
     
 
 class OrderCreateListView(generics.GenericAPIView):
     
     serializer_class = serializers.OrderCreationSerializer
     queryset = Order.objects.all()
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     
     def get(self, request):
         orders = Order.objects.all()
@@ -41,7 +36,7 @@ class OrderCreateListView(generics.GenericAPIView):
 class OrderDetailView(generics.GenericAPIView):
     
     serializer_class = serializers.OrderDetailSerializer
-    # permission_classes=[IsAuthenticated]
+    permission_classes=[IsAdminUser]
     
     # def get_object(self, pk):
     #     try:
@@ -55,6 +50,7 @@ class OrderDetailView(generics.GenericAPIView):
         order = get_object_or_404(Order, pk=pk)
         serializer = self.serializer_class(order)
         return Response(serializer.data, status = status.HTTP_200_OK)
+    
         
 
     def put(self, request, pk):
@@ -74,6 +70,7 @@ class OrderDetailView(generics.GenericAPIView):
 
 class OrderStatusUpdateView(generics.GenericAPIView):
     serializer_class = serializers.OrderStatusUpdateSerializer
+    permission_classes = [IsAdminUser]
     
     def get(self, request, pk):
         
@@ -89,4 +86,31 @@ class OrderStatusUpdateView(generics.GenericAPIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    
+class UserOrdersView(generics.GenericAPIView):
+    serializer_class = serializers.OrderDetailSerializer
+    queryset = Order.objects.all()
+        
+    def get(self, request, pk):
+            
+        user = User.objects.get(pk=pk)
+        orders = Order.objects.all().filter(customer=user)
+            
+        serializer = self.serializer_class(orders, many=True)
+            
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class UserOrderDetail(generics.GenericAPIView):
+    serializer_class = serializers.OrderDetailSerializer
+    
+    def get(self, request, user_id, order_id):
+        
+        user = User.objects.get(pk=user_id)
+        order = Order.objects.all().filter(customer=user).get(pk=order_id)
+        
+        serializer = self.serializer_class(order)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+        
             
